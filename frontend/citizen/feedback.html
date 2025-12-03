@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feedback - Municipality</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/citizen.css" />
+  <style>
+    .feedback-page { max-width: 800px; margin: 0 auto; padding: 40px 24px; }
+    .page-header { margin-bottom: 32px; }
+    .page-header h1 { font-size: 36px; color: var(--color-primary-light); margin-bottom: 8px; }
+    .feedback-card { background: var(--color-surface); border: 1px solid rgba(212, 181, 101, 0.25); border-radius: var(--radius-xl); padding: 40px; margin-bottom: 24px; }
+    .rating-section { margin-bottom: 32px; text-align: center; }
+    .rating-title { font-size: 20px; color: var(--color-primary-light); margin-bottom: 20px; }
+    .star-rating { display: flex; justify-content: center; gap: 12px; font-size: 48px; margin-bottom: 12px; }
+    .star { cursor: pointer; color: rgba(212, 181, 101, 0.3); transition: all var(--transition-normal); }
+    .star.active { color: var(--color-primary); }
+    .star:hover { transform: scale(1.2); }
+    .rating-label { font-size: 16px; color: var(--color-text-secondary); font-weight: 600; }
+    .feedback-history { margin-top: 40px; }
+    .history-title { font-size: 24px; color: var(--color-primary-light); margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(212, 181, 101, 0.2); }
+    .feedback-item { background: rgba(212, 181, 101, 0.05); border: 1px solid rgba(212, 181, 101, 0.2); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+    .feedback-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+    .feedback-stars { color: var(--color-primary); font-size: 18px; }
+    .feedback-date { font-size: 12px; color: var(--color-text-muted); }
+    .feedback-comment { font-size: 14px; color: var(--color-text-secondary); line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="feedback-page">
+    <div class="page-header">
+      <h1>Service Feedback</h1>
+      <p style="color: var(--color-text-secondary);">Help us improve our services by sharing your experience</p>
+    </div>
+
+    <!-- Submit Feedback -->
+    <div class="feedback-card">
+      <div class="rating-section">
+        <h3 class="rating-title">Rate Your Experience</h3>
+        <div class="star-rating" id="star-rating">
+          <span class="star" data-rating="1" onclick="setRating(1)">⭐</span>
+          <span class="star" data-rating="2" onclick="setRating(2)">⭐</span>
+          <span class="star" data-rating="3" onclick="setRating(3)">⭐</span>
+          <span class="star" data-rating="4" onclick="setRating(4)">⭐</span>
+          <span class="star" data-rating="5" onclick="setRating(5)">⭐</span>
+        </div>
+        <div class="rating-label" id="rating-label">Select a rating</div>
+      </div>
+
+      <form id="feedback-form">
+        <div class="form-group">
+          <label for="category">Category *</label>
+          <select id="category" required>
+            <option value="">Select category</option>
+            <option value="Service Quality">Service Quality</option>
+            <option value="Staff Behavior">Staff Behavior</option>
+            <option value="Processing Time">Processing Time</option>
+            <option value="Online Platform">Online Platform</option>
+            <option value="Payment System">Payment System</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="subject">Subject *</label>
+          <input type="text" id="subject" placeholder="Brief subject of your feedback" required />
+        </div>
+
+        <div class="form-group">
+          <label for="comment">Your Feedback *</label>
+          <textarea id="comment" rows="6" placeholder="Share your experience with us..." required></textarea>
+          <span class="hint">Minimum 10 characters</span>
+        </div>
+
+        <div class="form-group">
+          <label for="request-id">Related Request ID (Optional)</label>
+          <input type="number" id="request-id" placeholder="Enter request ID if applicable" />
+        </div>
+
+        <div id="feedback-message" class="message"></div>
+
+        <div style="display: flex; gap: 12px;">
+          <button type="submit" class="btn btn-primary" id="submit-btn">Submit Feedback</button>
+          <button type="reset" class="btn btn-secondary" onclick="resetForm()">Clear Form</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Feedback History -->
+    <div class="feedback-history">
+      <h2 class="history-title">Your Previous Feedback</h2>
+      <div id="feedback-list">
+        <div class="empty-state">Loading your feedback history...</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 32px;">
+      <a href="dashboard.html" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    requireRole('citizen', 'auth.html');
+
+    let selectedRating = 0;
+
+    const ratingLabels = {
+      1: 'Poor',
+      2: 'Fair',
+      3: 'Good',
+      4: 'Very Good',
+      5: 'Excellent'
+    };
+
+    function setRating(rating) {
+      selectedRating = rating;
+      const stars = document.querySelectorAll('.star');
+      stars.forEach((star, index) => {
+        if (index < rating) {
+          star.classList.add('active');
+        } else {
+          star.classList.remove('active');
+        }
+      });
+      document.getElementById('rating-label').textContent = ratingLabels[rating];
+    }
+
+    function resetForm() {
+      selectedRating = 0;
+      document.querySelectorAll('.star').forEach(star => star.classList.remove('active'));
+      document.getElementById('rating-label').textContent = 'Select a rating';
+      hideElementMessage('feedback-message');
+    }
+
+    // Submit feedback
+    document.getElementById('feedback-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+
+      if (selectedRating === 0) {
+        showElementMessage('feedback-message', 'Please select a rating', 'error');
+        return;
+      }
+
+      const comment = document.getElementById('comment').value;
+      if (comment.length < 10) {
+        showElementMessage('feedback-message', 'Feedback must be at least 10 characters', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+      hideElementMessage('feedback-message');
+
+      try {
+        const feedbackData = {
+          category: document.getElementById('category').value,
+          subject: document.getElementById('subject').value,
+          comment: comment,
+          rating: selectedRating,
+          request_id: document.getElementById('request-id').value ? parseInt(document.getElementById('request-id').value) : null
+        };
+
+        await FeedbackAPI.create(feedbackData);
+
+        showElementMessage('feedback-message', 'Thank you for your feedback! We appreciate your input.', 'success');
+        document.getElementById('feedback-form').reset();
+        resetForm();
+        loadFeedbackHistory();
+      } catch (error) {
+        showElementMessage('feedback-message', error.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Submit Feedback';
+      }
+    });
+
+    // Load feedback history
+    async function loadFeedbackHistory() {
+      try {
+        const feedbacks = await FeedbackAPI.getMyFeedback();
+        const container = document.getElementById('feedback-list');
+
+        if (feedbacks.length === 0) {
+          container.innerHTML = '<div class="empty-state">No feedback history yet. Submit your first feedback above!</div>';
+          return;
+        }
+
+        container.innerHTML = feedbacks
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+          .map(f => `
+            <div class="feedback-item">
+              <div class="feedback-header">
+                <div>
+                  <div class="feedback-stars">${'⭐'.repeat(f.rating)}</div>
+                  <div style="font-size: 16px; color: var(--color-text); font-weight: 600; margin: 4px 0;">${f.subject}</div>
+                  <div style="font-size: 13px; color: var(--color-text-muted);">${f.category}</div>
+                </div>
+                <div class="feedback-date">${formatDate(f.created_at)}</div>
+              </div>
+              <div class="feedback-comment">${f.comment}</div>
+              ${f.request_id ? `<div style="margin-top: 8px; font-size: 12px; color: var(--color-text-muted);">Related to Request #${f.request_id}</div>` : ''}
+            </div>
+          `).join('');
+      } catch (error) {
+        document.getElementById('feedback-list').innerHTML = '<div class="empty-state">Error loading feedback history.</div>';
+      }
+    }
+
+    loadFeedbackHistory();
+  </script>
+</body>
+</html>

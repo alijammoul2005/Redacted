@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment History - Municipality</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/citizen.css" />
+  <style>
+    .history-page { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    .history-header { margin-bottom: 24px; }
+    .history-header h1 { font-size: 36px; color: var(--color-primary-light); margin-bottom: 8px; }
+    .history-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+    .history-card { background: rgba(10,10,10,0.85); border: 1px solid rgba(212,181,101,0.25); border-radius: var(--radius-xl); padding: 20px; cursor: pointer; transition: all var(--transition-normal); }
+    .history-card:hover { transform: translateY(-2px); border-color: rgba(255,215,128,0.6); }
+    .history-card-main { display: flex; justify-content: space-between; align-items: center; }
+    .history-amount { font-size: 18px; font-weight: 700; color: var(--color-success); }
+    .history-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <div class="history-page">
+    <header class="history-header">
+      <h1>Payment History</h1>
+      <p>Review your recent payments and receipts.</p>
+    </header>
+
+    <section class="history-list" id="history-list"></section>
+    <div id="empty-state" class="empty-state" style="display:none;">No payments found.</div>
+
+    <div class="history-actions">
+      <a href="dashboard.html" class="btn btn-secondary">← Back to Dashboard</a>
+      <a href="payments.html" class="btn btn-primary">Make Payment</a>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    requireRole('citizen', 'auth.html');
+
+    (async () => {
+      try {
+        const payments = await PaymentAPI.getMyPayments();
+        const container = document.getElementById('history-list');
+        const emptyState = document.getElementById('empty-state');
+
+        if (!payments || payments.length === 0) {
+          emptyState.style.display = 'block';
+          return;
+        }
+
+        container.innerHTML = payments
+          .sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date))
+          .map(p => `
+            <div class="history-card" onclick="window.location.href='payment-receipt.html?payment_id=${p.payment_id}'">
+              <div class="history-card-main">
+                <div>
+                  <div style="font-size: 20px; margin-bottom: 4px;">${p.payment_method || 'Payment'}</div>
+                  <div style="font-size: 14px; color: #b1b1b1;">ID: ${p.payment_id} • ${formatDate(p.payment_date)}</div>
+                </div>
+                <div style="text-align: right;">
+                  <div class="history-amount">${formatCurrency(p.amount)}</div>
+                  <span class="status-badge ${getStatusClass(p.status)}">${formatStatus(p.status)}</span>
+                </div>
+              </div>
+            </div>
+          `).join('');
+      } catch (error) {
+        showMessage('Error loading payment history: ' + error.message, 'error');
+      }
+    })();
+  </script>
+</body>
+</html>

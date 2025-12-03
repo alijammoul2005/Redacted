@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apply for Document - Municipality</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/citizen.css" />
+  <style>
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+    .apply-container { max-width: 700px; width: 100%; }
+    .apply-card {
+      background: var(--color-surface);
+      border: 1px solid rgba(212, 181, 101, 0.3);
+      border-radius: var(--radius-xl);
+      padding: 40px;
+      box-shadow: var(--shadow-xl);
+    }
+    .apply-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .apply-header h2 {
+      font-size: 28px;
+      color: var(--color-primary-light);
+      margin-bottom: 8px;
+    }
+    .apply-header p {
+      font-size: 14px;
+      color: var(--color-text-secondary);
+    }
+    .step-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .step {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(212, 181, 101, 0.1);
+      border: 2px solid rgba(212, 181, 101, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      position: relative;
+    }
+    .step.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: #1a1206;
+    }
+    .step.completed {
+      background: var(--color-success);
+      border-color: var(--color-success);
+      color: #1a1206;
+    }
+    .step-label {
+      position: absolute;
+      bottom: -24px;
+      font-size: 11px;
+      white-space: nowrap;
+      color: var(--color-text-muted);
+    }
+    .form-step {
+      display: none;
+    }
+    .form-step.active {
+      display: block;
+    }
+    .document-types-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .document-type-card {
+      padding: 20px;
+      background: rgba(212, 181, 101, 0.05);
+      border: 2px solid rgba(212, 181, 101, 0.2);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: all var(--transition-normal);
+      text-align: center;
+    }
+    .document-type-card:hover {
+      border-color: var(--color-primary);
+      background: rgba(212, 181, 101, 0.1);
+    }
+    .document-type-card.selected {
+      border-color: var(--color-primary);
+      background: var(--color-primary);
+      color: #1a1206;
+    }
+    .document-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+    .document-name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .review-section {
+      background: rgba(212, 181, 101, 0.05);
+      border: 1px solid rgba(212, 181, 101, 0.2);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .review-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(212, 181, 101, 0.1);
+    }
+    .review-row:last-child {
+      border-bottom: none;
+    }
+    .review-label {
+      color: var(--color-text-muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .review-value {
+      color: var(--color-text);
+      font-size: 13px;
+      text-align: right;
+    }
+    .step-navigation {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .success-state {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .success-icon {
+      font-size: 72px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="apply-container">
+    <div class="apply-card">
+      <div class="apply-header">
+        <h2>Apply for Document</h2>
+        <p>Follow the steps to submit your document request</p>
+      </div>
+
+      <!-- Step Indicator -->
+      <div class="step-indicator">
+        <div class="step active" id="indicator-1">
+          1
+          <div class="step-label">Select Type</div>
+        </div>
+        <div class="step" id="indicator-2">
+          2
+          <div class="step-label">Fill Form</div>
+        </div>
+        <div class="step" id="indicator-3">
+          3
+          <div class="step-label">Upload Files</div>
+        </div>
+        <div class="step" id="indicator-4">
+          4
+          <div class="step-label">Review</div>
+        </div>
+      </div>
+
+      <!-- Step 1: Select Document Type -->
+      <div class="form-step active" id="step-1">
+        <h3 style="color: var(--color-primary-light); margin-bottom: 20px;">Select Document Type</h3>
+        <div class="document-types-grid" id="document-types">
+          <!-- Populated by JavaScript -->
+        </div>
+        <div class="step-navigation">
+          <a href="dashboard.html" class="btn btn-secondary">Cancel</a>
+          <button class="btn btn-primary" id="next-1" disabled onclick="goToStep(2)">Next →</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Fill Form -->
+      <div class="form-step" id="step-2">
+        <h3 style="color: var(--color-primary-light); margin-bottom: 20px;">Fill Request Details</h3>
+        <form id="request-form">
+          <div class="form-group">
+            <label for="description">Description *</label>
+            <textarea id="description" rows="4" placeholder="Describe your request" required></textarea>
+          </div>
+          <div class="form-group">
+            <label for="priority">Priority *</label>
+            <select id="priority" required>
+              <option value="NORMAL">Normal</option>
+              <option value="URGENT">Urgent</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="notes">Additional Notes</label>
+            <textarea id="notes" rows="3" placeholder="Any additional information"></textarea>
+          </div>
+        </form>
+        <div class="step-navigation">
+          <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+          <button class="btn btn-primary" onclick="goToStep(3)">Next →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Upload Files -->
+      <div class="form-step" id="step-3">
+        <h3 style="color: var(--color-primary-light); margin-bottom: 20px;">Upload Supporting Documents</h3>
+        <div class="form-group">
+          <label for="file-upload">Upload Files (Optional)</label>
+          <input type="file" id="file-upload" multiple accept=".pdf,.jpg,.jpeg,.png" />
+          <span class="hint">Accepted formats: PDF, JPG, PNG (Max 5MB each)</span>
+        </div>
+        <div id="file-list" style="margin-top: 16px;"></div>
+        <div class="step-navigation">
+          <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+          <button class="btn btn-primary" onclick="goToStep(4)">Next →</button>
+        </div>
+      </div>
+
+      <!-- Step 4: Review & Submit -->
+      <div class="form-step" id="step-4">
+        <h3 style="color: var(--color-primary-light); margin-bottom: 20px;">Review Your Request</h3>
+        <div class="review-section" id="review-content">
+          <!-- Populated by JavaScript -->
+        </div>
+        <div id="submit-message" class="message"></div>
+        <div class="step-navigation">
+          <button class="btn btn-secondary" onclick="goToStep(3)">← Back</button>
+          <button class="btn btn-primary" id="submit-btn" onclick="submitRequest()">Submit Request</button>
+        </div>
+      </div>
+
+      <!-- Success State -->
+      <div class="form-step" id="step-success">
+        <div class="success-state">
+          <div class="success-icon">✅</div>
+          <h2 style="color: var(--color-primary-light); margin-bottom: 16px;">Request Submitted Successfully!</h2>
+          <p style="color: var(--color-text-secondary); margin-bottom: 24px;">
+            Your request has been submitted. You'll receive a notification once it's reviewed.
+          </p>
+          <div id="request-id-display" style="padding: 16px; background: rgba(212, 181, 101, 0.1); border-radius: var(--radius-lg); margin-bottom: 24px;"></div>
+          <div style="display: flex; gap: 12px; justify-content: center;">
+            <a href="dashboard.html" class="btn btn-primary">Go to Dashboard</a>
+            <a href="requests.html" class="btn btn-secondary">View All Requests</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    requireRole('citizen', 'auth.html');
+
+    let selectedType = null;
+    let uploadedFiles = [];
+    let currentStep = 1;
+
+    const documentTypes = [
+      { type: 'Birth Certificate', icon: '👶' },
+      { type: 'Marriage Certificate', icon: '💍' },
+      { type: 'Death Certificate', icon: '🕊️' },
+      { type: 'Residence Certificate', icon: '🏠' },
+      { type: 'Identity Card', icon: '🪪' },
+      { type: 'Business License', icon: '🏢' },
+      { type: 'Building Permit', icon: '🏗️' },
+      { type: 'Other', icon: '📄' }
+    ];
+
+    // Load document types
+    const typesContainer = document.getElementById('document-types');
+    typesContainer.innerHTML = documentTypes.map((doc, index) => `
+      <div class="document-type-card" onclick="selectDocumentType('${doc.type}', this)">
+        <div class="document-icon">${doc.icon}</div>
+        <div class="document-name">${doc.type}</div>
+      </div>
+    `).join('');
+
+    function selectDocumentType(type, element) {
+      selectedType = type;
+      document.querySelectorAll('.document-type-card').forEach(card => {
+        card.classList.remove('selected');
+      });
+      element.classList.add('selected');
+      document.getElementById('next-1').disabled = false;
+    }
+
+    // File upload handling
+    document.getElementById('file-upload').addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      uploadedFiles = files;
+      displayFiles();
+    });
+
+    function displayFiles() {
+      const fileList = document.getElementById('file-list');
+      if (uploadedFiles.length === 0) {
+        fileList.innerHTML = '';
+        return;
+      }
+      fileList.innerHTML = `
+        <div style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 8px;">
+          <strong>${uploadedFiles.length} file(s) selected:</strong>
+        </div>
+        ${uploadedFiles.map(file => `<div style="font-size: 12px; color: var(--color-text-muted); padding: 4px 0;">📎 ${file.name}</div>`).join('')}
+      `;
+    }
+
+    function goToStep(step) {
+      if (step === 4) {
+        // Populate review
+        const reviewContent = document.getElementById('review-content');
+        reviewContent.innerHTML = `
+          <div class="review-row">
+            <span class="review-label">Document Type:</span>
+            <span class="review-value">${selectedType}</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Description:</span>
+            <span class="review-value">${document.getElementById('description').value || 'N/A'}</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Priority:</span>
+            <span class="review-value">${document.getElementById('priority').value}</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Additional Notes:</span>
+            <span class="review-value">${document.getElementById('notes').value || 'None'}</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Attachments:</span>
+            <span class="review-value">${uploadedFiles.length} file(s)</span>
+          </div>
+        `;
+      }
+
+      // Hide all steps
+      document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+      document.getElementById(`step-${step}`).classList.add('active');
+
+      // Update indicators
+      document.querySelectorAll('.step').forEach((s, index) => {
+        s.classList.remove('active');
+        if (index + 1 < step) {
+          s.classList.add('completed');
+        } else if (index + 1 === step) {
+          s.classList.add('active');
+        } else {
+          s.classList.remove('completed');
+        }
+      });
+
+      currentStep = step;
+    }
+
+    async function submitRequest() {
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+      hideElementMessage('submit-message');
+
+      try {
+        const requestData = {
+          request_type: selectedType,
+          description: document.getElementById('description').value,
+          priority: document.getElementById('priority').value,
+          notes: document.getElementById('notes').value || null
+        };
+
+        const request = await RequestAPI.create(requestData);
+
+        // Upload files if any
+        if (uploadedFiles.length > 0) {
+          for (const file of uploadedFiles) {
+            await FileAPI.uploadRequestFile(request.request_id, file);
+          }
+        }
+
+        // Show success
+        document.getElementById('request-id-display').innerHTML = `
+          <div style="font-size: 14px; color: var(--color-text-muted); margin-bottom: 4px;">Request ID</div>
+          <div style="font-size: 24px; font-weight: 700; color: var(--color-primary);">#${request.request_id}</div>
+        `;
+        goToStep('success');
+        document.querySelectorAll('.step').forEach(s => s.classList.add('completed'));
+      } catch (error) {
+        showElementMessage('submit-message', error.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Submit Request';
+      }
+    }
+  </script>
+</body>
+</html>

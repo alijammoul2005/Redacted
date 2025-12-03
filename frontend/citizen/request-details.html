@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Request Details - Municipality</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/citizen.css" />
+  <style>
+    body { min-height: 100vh; background: var(--color-background); padding: 40px 20px; }
+    .details-container { max-width: 900px; margin: 0 auto; }
+    .details-card { background: var(--color-surface); border: 1px solid rgba(212, 181, 101, 0.3); border-radius: var(--radius-xl); padding: 40px; box-shadow: var(--shadow-xl); margin-bottom: 24px; }
+    .details-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid rgba(212, 181, 101, 0.2); }
+    .request-title { font-size: 28px; color: var(--color-primary-light); margin: 0 0 8px; }
+    .request-meta { font-size: 14px; color: var(--color-text-muted); }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 32px; }
+    .info-item { padding: 16px; background: rgba(212, 181, 101, 0.05); border: 1px solid rgba(212, 181, 101, 0.2); border-radius: var(--radius-lg); }
+    .info-label { font-size: 12px; color: var(--color-text-muted); font-weight: 600; margin-bottom: 4px; text-transform: uppercase; }
+    .info-value { font-size: 16px; color: var(--color-text); font-weight: 600; }
+    .section-title { font-size: 20px; color: var(--color-primary-light); margin: 32px 0 16px; font-weight: 600; }
+    .timeline { position: relative; padding-left: 32px; }
+    .timeline-item { position: relative; padding-bottom: 32px; }
+    .timeline-item:last-child { padding-bottom: 0; }
+    .timeline-dot { position: absolute; left: -32px; width: 12px; height: 12px; background: var(--color-primary); border-radius: 50%; }
+    .timeline-line { position: absolute; left: -26px; top: 12px; bottom: -12px; width: 2px; background: rgba(212, 181, 101, 0.3); }
+    .timeline-item:last-child .timeline-line { display: none; }
+    .timeline-date { font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px; }
+    .timeline-event { font-size: 14px; color: var(--color-text-secondary); }
+    .attachments-list { display: grid; gap: 12px; }
+    .attachment-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(212, 181, 101, 0.05); border: 1px solid rgba(212, 181, 101, 0.2); border-radius: var(--radius-md); }
+    .attachment-icon { font-size: 24px; }
+    .attachment-info { flex: 1; }
+    .attachment-name { font-size: 14px; color: var(--color-text); font-weight: 600; }
+    .attachment-size { font-size: 12px; color: var(--color-text-muted); }
+    .action-buttons { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <div class="details-container">
+    <div id="loading" class="loading-spinner"><div class="spinner"></div><p>Loading request details...</p></div>
+    <div id="error" style="display: none; text-align: center; color: var(--color-error);"></div>
+    <div id="content" style="display: none;">
+      <div class="details-card">
+        <div class="details-header">
+          <div>
+            <h1 class="request-title" id="request-type"></h1>
+            <div class="request-meta" id="request-meta"></div>
+          </div>
+          <span id="status-badge"></span>
+        </div>
+
+        <!-- Info Grid -->
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Request ID</div>
+            <div class="info-value" id="request-id"></div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Submitted Date</div>
+            <div class="info-value" id="submitted-date"></div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Priority</div>
+            <div class="info-value" id="priority"></div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Assigned To</div>
+            <div class="info-value" id="assigned-to"></div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <h3 class="section-title">Description</h3>
+        <p id="description" style="color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 24px;"></p>
+
+        <!-- Notes -->
+        <div id="notes-section" style="display: none;">
+          <h3 class="section-title">Additional Notes</h3>
+          <p id="notes" style="color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 24px;"></p>
+        </div>
+
+        <!-- Timeline -->
+        <h3 class="section-title">Timeline</h3>
+        <div id="timeline" class="timeline"></div>
+
+        <!-- Attachments -->
+        <div id="attachments-section" style="display: none;">
+          <h3 class="section-title">Attachments</h3>
+          <div id="attachments" class="attachments-list"></div>
+        </div>
+
+        <!-- Actions -->
+        <div class="action-buttons">
+          <a href="requests.html" class="btn btn-secondary">← Back to Requests</a>
+          <button id="pay-btn" class="btn btn-primary" style="display: none;" onclick="goToPayment()">Pay Now</button>
+          <button class="btn btn-outline" onclick="window.print()">Print</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    requireRole('citizen', 'auth.html');
+
+    const requestId = getUrlParameter('id');
+    if (!requestId) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').innerHTML = '<h2>No Request ID Provided</h2><a href="requests.html" class="btn btn-primary">Back to Requests</a>';
+      document.getElementById('error').style.display = 'block';
+    } else {
+      loadRequestDetails();
+    }
+
+    async function loadRequestDetails() {
+      try {
+        const request = await RequestAPI.getById(requestId);
+
+        // Populate details
+        document.getElementById('request-type').textContent = request.request_type;
+        document.getElementById('request-meta').textContent = `Request #${request.request_id}`;
+        document.getElementById('status-badge').className = `status-badge ${getStatusClass(request.status)}`;
+        document.getElementById('status-badge').textContent = formatStatus(request.status);
+        document.getElementById('request-id').textContent = `#${request.request_id}`;
+        document.getElementById('submitted-date').textContent = formatDate(request.submitted_date);
+        document.getElementById('priority').textContent = request.priority || 'NORMAL';
+        document.getElementById('assigned-to').textContent = request.assigned_to_name || 'Not assigned yet';
+        document.getElementById('description').textContent = request.description || 'No description provided';
+
+        if (request.notes) {
+          document.getElementById('notes').textContent = request.notes;
+          document.getElementById('notes-section').style.display = 'block';
+        }
+
+        // Timeline
+        const timeline = document.getElementById('timeline');
+        const events = [
+          { date: request.submitted_date, event: 'Request submitted' },
+          ...(request.updated_at ? [{ date: request.updated_at, event: `Status updated to ${formatStatus(request.status)}` }] : []),
+        ];
+        timeline.innerHTML = events.map((e, i) => `
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            ${i < events.length - 1 ? '<div class="timeline-line"></div>' : ''}
+            <div class="timeline-date">${formatDateTime(e.date)}</div>
+            <div class="timeline-event">${e.event}</div>
+          </div>
+        `).join('');
+
+        // Show pay button if approved
+        if (request.status === 'APPROVED' || request.status === 'COMPLETED') {
+          document.getElementById('pay-btn').style.display = 'block';
+        }
+
+        // Load attachments
+        try {
+          const attachments = await FileAPI.getRequestFiles(requestId);
+          if (attachments.length > 0) {
+            document.getElementById('attachments').innerHTML = attachments.map(a => `
+              <div class="attachment-item">
+                <div class="attachment-icon">📎</div>
+                <div class="attachment-info">
+                  <div class="attachment-name">${a.filename || a.file_path.split('/').pop()}</div>
+                  <div class="attachment-size">Uploaded ${formatDate(a.uploaded_at)}</div>
+                </div>
+                <button class="btn btn-sm btn-outline" onclick="downloadFile(${a.file_id})">Download</button>
+              </div>
+            `).join('');
+            document.getElementById('attachments-section').style.display = 'block';
+          }
+        } catch (error) {
+          console.log('No attachments or error loading:', error);
+        }
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+      } catch (error) {
+        console.error('Error loading request:', error);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').innerHTML = `<h2>Error Loading Request</h2><p>${error.message}</p><a href="requests.html" class="btn btn-primary">Back to Requests</a>`;
+        document.getElementById('error').style.display = 'block';
+      }
+    }
+
+    function goToPayment() {
+      window.location.href = `payments.html?request_id=${requestId}`;
+    }
+
+    async function downloadFile(fileId) {
+      try {
+        const blob = await FileAPI.downloadFile(fileId);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `file_${fileId}`;
+        a.click();
+      } catch (error) {
+        alert('Error downloading file: ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>

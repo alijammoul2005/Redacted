@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Receipt - Municipality</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/citizen.css" />
+  <style>
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px; background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); }
+    .receipt-card { max-width: 600px; width: 100%; background: var(--color-surface); border-radius: var(--radius-xl); padding: 40px; border: 1px solid rgba(212, 181, 101, 0.6); box-shadow: var(--shadow-xl); }
+    .receipt-header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid rgba(212, 181, 101, 0.3); }
+    .receipt-header h1 { font-size: 28px; color: #f8e2a6; margin-bottom: 8px; letter-spacing: 2px; }
+    .receipt-section { margin-bottom: 24px; }
+    .receipt-section h2 { font-size: 16px; color: var(--color-primary-light); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    .receipt-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(212, 181, 101, 0.1); }
+    .receipt-label { color: #c7ad6f; font-size: 13px; font-weight: 500; }
+    .receipt-value { color: #f7f7f7; font-size: 13px; text-align: right; font-weight: 500; }
+    .receipt-value.amount { font-size: 18px; color: var(--color-success); font-weight: 700; }
+    .municipality-info { background: rgba(212, 181, 101, 0.1); padding: 16px; border-radius: var(--radius-md); margin-top: 20px; }
+    @media print { .form-actions { display: none; } body { background: white; } }
+  </style>
+</head>
+<body>
+  <div class="receipt-card">
+    <div id="loading" class="loading-spinner"><div class="spinner"></div><p>Loading receipt...</p></div>
+    <div id="error" style="display: none; text-align: center; color: var(--color-error);"></div>
+    <div id="receipt-content" style="display: none;"></div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    requireRole('citizen', 'auth.html');
+
+    const paymentId = getUrlParameter('payment_id');
+    if (!paymentId) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').innerHTML = '<p>No payment ID provided.</p><a href="payments.html" class="btn btn-secondary">← Return to Payments</a>';
+      document.getElementById('error').style.display = 'block';
+    } else {
+      (async () => {
+        try {
+          const receipt = await PaymentAPI.getReceipt(paymentId);
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('receipt-content').innerHTML = `
+            <div class="receipt-header">
+              <h1>PAYMENT RECEIPT</h1>
+              <p>Official Payment Confirmation</p>
+            </div>
+
+            <div class="receipt-section">
+              <h2>Receipt Information</h2>
+              <div class="receipt-row">
+                <span class="receipt-label">Receipt Number:</span>
+                <span class="receipt-value">${receipt.receipt_number || 'N/A'}</span>
+              </div>
+              <div class="receipt-row">
+                <span class="receipt-label">Transaction ID:</span>
+                <span class="receipt-value">${receipt.transaction_id || 'N/A'}</span>
+              </div>
+              <div class="receipt-row">
+                <span class="receipt-label">Payment Date:</span>
+                <span class="receipt-value">${formatDateTime(receipt.payment_date)}</span>
+              </div>
+            </div>
+
+            <div class="receipt-section">
+              <h2>Request Details</h2>
+              <div class="receipt-row">
+                <span class="receipt-label">Request ID:</span>
+                <span class="receipt-value">#${receipt.request_id}</span>
+              </div>
+              <div class="receipt-row">
+                <span class="receipt-label">Request Type:</span>
+                <span class="receipt-value">${receipt.request_type || 'N/A'}</span>
+              </div>
+              <div class="receipt-row">
+                <span class="receipt-label">Citizen Name:</span>
+                <span class="receipt-value">${receipt.citizen_name || 'N/A'}</span>
+              </div>
+            </div>
+
+            <div class="receipt-section">
+              <h2>Payment Details</h2>
+              <div class="receipt-row">
+                <span class="receipt-label">Payment Status:</span>
+                <span class="receipt-value ${receipt.status === 'COMPLETED' ? 'amount' : ''}">${receipt.status || 'N/A'}</span>
+              </div>
+              <div class="receipt-row">
+                <span class="receipt-label">Payment Method:</span>
+                <span class="receipt-value">${receipt.payment_method || 'N/A'}</span>
+              </div>
+              <div class="receipt-row">
+                <span class="receipt-label">Amount Paid:</span>
+                <span class="receipt-value amount">${formatCurrency(receipt.amount)}</span>
+              </div>
+            </div>
+
+            <div class="municipality-info">
+              <p><strong>${receipt.municipality_info.name}</strong></p>
+              <p>${receipt.municipality_info.address}</p>
+              <p>Phone: ${receipt.municipality_info.phone}</p>
+              <p>Email: ${receipt.municipality_info.email}</p>
+            </div>
+
+            <div class="form-actions" style="margin-top: 30px;">
+              <button onclick="window.print()" class="btn btn-primary">Download Receipt</button>
+              <a href="payments.html" class="btn btn-secondary">Make Another Payment</a>
+              <a href="payment-history.html" class="btn btn-secondary">Payment History</a>
+              <a href="dashboard.html" class="btn btn-secondary">Dashboard</a>
+            </div>
+          `;
+          document.getElementById('receipt-content').style.display = 'block';
+        } catch (error) {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('error').innerHTML = `<p>Error loading receipt: ${error.message}</p><a href="dashboard.html" class="btn btn-secondary">← Back to Dashboard</a>`;
+          document.getElementById('error').style.display = 'block';
+        }
+      })();
+    }
+  </script>
+</body>
+</html>
