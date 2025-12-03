@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Employee Dashboard - Municipality</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/citizen.css" />
+</head>
+<body>
+  <div class="app">
+    <main class="main-content">
+      <header class="top-header">
+        <div class="header-left">
+          <div class="logo-mark-small">A</div>
+          <span class="brand-name-small">MUNICIPALITY</span>
+        </div>
+        <h1>Employee Dashboard</h1>
+        <div class="header-right">
+          <button class="icon-btn" title="Profile">👤</button>
+          <button id="logout-btn" class="btn logout-btn">Logout</button>
+        </div>
+      </header>
+
+      <div class="content-container">
+        <section class="welcome-section">
+          <div class="welcome-card">
+            <div>
+              <h2 id="welcome-name">Welcome, Employee!</h2>
+              <p id="welcome-date">Today is <span id="date-display"></span></p>
+            </div>
+            <div class="user-avatar">👔</div>
+          </div>
+        </section>
+
+        <section class="summary-cards">
+          <div class="summary-card">
+            <div class="summary-icon">📋</div>
+            <div class="summary-info">
+              <div class="summary-value" id="total-requests">0</div>
+              <div class="summary-label">Total Requests</div>
+              <div class="summary-detail" id="pending-requests">0 pending</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon">💬</div>
+            <div class="summary-info">
+              <div class="summary-value" id="total-complaints">0</div>
+              <div class="summary-label">Complaints</div>
+              <div class="summary-detail" id="pending-complaints">0 pending</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon">✅</div>
+            <div class="summary-info">
+              <div class="summary-value" id="completed-today">0</div>
+              <div class="summary-label">Completed Today</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="dashboard-section full-width">
+          <div class="section-header">
+            <h3>Recent Requests</h3>
+            <a href="requests.html" class="btn btn-outline btn-sm">Manage All Requests →</a>
+          </div>
+          <div id="requests-list" class="items-list">
+            <div class="empty-state">Loading requests...</div>
+          </div>
+        </section>
+
+        <section class="dashboard-section full-width">
+          <div class="section-header">
+            <h3>Recent Complaints</h3>
+            <a href="complaints.html" class="btn btn-outline btn-sm">Manage All Complaints →</a>
+          </div>
+          <div id="complaints-list" class="items-list">
+            <div class="empty-state">Loading complaints...</div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    // Allow both citizens and employees (swapped roles)
+    if (!isAuthenticated()) {
+      window.location.href = '/frontend/citizen/auth.html';
+    }
+
+    document.getElementById('logout-btn').addEventListener('click', logout);
+
+    async function loadDashboard() {
+      try {
+        // Get user data (works for both citizens and employees due to swapped roles)
+        const userData = getUserData();
+        let displayName = userData?.email || 'User';
+        
+        // Try to get profile, but don't fail if it doesn't work (swapped roles)
+        try {
+          const profile = await EmployeeAPI.getProfile();
+          displayName = profile.full_name || profile.email || displayName;
+        } catch (error) {
+          // Silently fail - user might be a citizen accessing employee dashboard
+          console.log('Profile fetch failed (expected for swapped roles):', error.message);
+        }
+        
+        document.getElementById('welcome-name').textContent = `Welcome, ${displayName}!`;
+
+        // Load ALL requests and complaints (employee view)
+        const requests = await RequestAPI.getAll(null, 0, 100);
+        const complaints = await ComplaintAPI.getAll(null, null, 0, 100);
+
+        // Update summary cards
+        document.getElementById('total-requests').textContent = requests.length;
+        document.getElementById('total-complaints').textContent = complaints.length;
+
+        const pendingReqs = requests.filter(r => r.status === 'SUBMITTED' || r.status === 'UNDER_REVIEW').length;
+        const pendingComps = complaints.filter(c => c.status === 'SUBMITTED' || c.status === 'UNDER_REVIEW').length;
+
+        document.getElementById('pending-requests').textContent = `${pendingReqs} pending`;
+        document.getElementById('pending-complaints').textContent = `${pendingComps} pending`;
+
+        // Count completed today
+        const today = new Date().toISOString().split('T')[0];
+        const completedToday = requests.filter(r =>
+          r.status === 'COMPLETED' && r.request_date && r.request_date.startsWith(today)
+        ).length;
+        document.getElementById('completed-today').textContent = completedToday;
+
+        // Render recent requests (sorted by date, most recent first)
+        const reqContainer = document.getElementById('requests-list');
+        if (requests.length > 0) {
+          const sortedRequests = requests.sort((a, b) =>
+            new Date(b.request_date) - new Date(a.request_date)
+          );
+          reqContainer.innerHTML = sortedRequests.slice(0, 10).map(r => `
+            <div class="item-row" onclick="window.location.href='task-details.html?id=${r.request_id}'" style="cursor: pointer;">
+              <div class="item-row-info">
+                <div class="item-row-title">${r.request_type}</div>
+                <div class="item-row-meta">ID: #${r.request_id} • ${formatDate(r.request_date)}</div>
+              </div>
+              <span class="status-badge ${getStatusClass(r.status)}">${formatStatus(r.status)}</span>
+            </div>
+          `).join('');
+        } else {
+          showEmptyState('requests-list', 'No requests found', '📋');
+        }
+
+        // Render recent complaints (sorted by date, most recent first)
+        const compContainer = document.getElementById('complaints-list');
+        if (complaints.length > 0) {
+          const sortedComplaints = complaints.sort((a, b) =>
+            new Date(b.submission_date) - new Date(a.submission_date)
+          );
+          compContainer.innerHTML = sortedComplaints.slice(0, 10).map(c => `
+            <div class="item-row" style="cursor: pointer;">
+              <div class="item-row-info">
+                <div class="item-row-title">${c.title}</div>
+                <div class="item-row-meta">${c.category} • ${formatDate(c.submission_date)}</div>
+              </div>
+              <span class="status-badge ${getStatusClass(c.status)}">${formatStatus(c.status)}</span>
+            </div>
+          `).join('');
+        } else {
+          showEmptyState('complaints-list', 'No complaints found', '💬');
+        }
+
+      } catch (error) {
+        console.error('Dashboard error:', error);
+        showMessage('Error loading dashboard: ' + error.message, 'error');
+      }
+    }
+
+    updateDateTime();
+    loadDashboard();
+  </script>
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Complaints - Employee Portal</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/citizen.css" />
+  <style>
+    .complaints-page { max-width: 1400px; margin: 0 auto; padding: 40px 24px; }
+    .page-header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; }
+    .page-header h1 { font-size: 36px; color: var(--color-primary-light); margin: 0; }
+    .filters-bar { background: var(--color-surface); border: 1px solid rgba(212, 181, 101, 0.25); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 24px; }
+    .filters-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+    .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filter-tab { padding: 8px 16px; background: transparent; border: 1px solid rgba(212, 181, 101, 0.3); color: var(--color-text-secondary); font-size: 13px; font-weight: 600; border-radius: var(--radius-pill); cursor: pointer; transition: all var(--transition-normal); }
+    .filter-tab:hover, .filter-tab.active { background: var(--color-primary); color: #1a1206; border-color: var(--color-primary); }
+    .complaints-grid { display: grid; gap: 16px; }
+    .complaint-card { background: var(--color-surface); border: 1px solid rgba(212, 181, 101, 0.25); border-radius: var(--radius-lg); padding: 20px; transition: all var(--transition-normal); cursor: pointer; }
+    .complaint-card:hover { border-color: var(--color-primary-light); box-shadow: var(--shadow-lg); }
+    .complaint-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+    .complaint-title { font-size: 18px; font-weight: 700; color: var(--color-primary); }
+    .complaint-meta { font-size: 12px; color: var(--color-text-muted); margin-top: 8px; }
+    .complaint-description { font-size: 14px; color: var(--color-text-secondary); margin-top: 8px; line-height: 1.5; }
+
+    /* Modal Styles */
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); }
+    .modal.show { display: flex; align-items: center; justify-content: center; }
+    .modal-content { background: var(--color-surface); margin: auto; padding: 0; border: 1px solid rgba(212, 181, 101, 0.5); border-radius: var(--radius-xl); width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { padding: 24px; border-bottom: 1px solid rgba(212, 181, 101, 0.2); display: flex; justify-content: space-between; align-items: center; }
+    .modal-header h2 { margin: 0; color: var(--color-primary-light); }
+    .modal-body { padding: 24px; }
+    .close { color: var(--color-text-muted); font-size: 32px; font-weight: bold; cursor: pointer; line-height: 1; }
+    .close:hover { color: var(--color-primary); }
+    .detail-section { margin-bottom: 24px; }
+    .detail-label { font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+    .detail-value { font-size: 16px; color: var(--color-text); }
+    .responses-section { margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(212, 181, 101, 0.2); }
+    .response-item { background: rgba(212, 181, 101, 0.05); padding: 16px; border-radius: var(--radius-md); margin-bottom: 12px; }
+    .response-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .response-author { font-weight: 600; color: var(--color-primary); }
+    .response-date { font-size: 12px; color: var(--color-text-muted); }
+    .response-text { color: var(--color-text-secondary); line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="complaints-page">
+    <div class="page-header">
+      <h1>Manage Complaints</h1>
+      <a href="dashboard.html" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="filters-row">
+        <span style="font-size: 14px; font-weight: 600; color: var(--color-text-secondary);">Filter by status:</span>
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-status="all">All</button>
+          <button class="filter-tab" data-status="SUBMITTED">Submitted</button>
+          <button class="filter-tab" data-status="UNDER_REVIEW">Under Review</button>
+          <button class="filter-tab" data-status="IN_PROGRESS">In Progress</button>
+          <button class="filter-tab" data-status="RESOLVED">Resolved</button>
+          <button class="filter-tab" data-status="CLOSED">Closed</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Complaints Grid -->
+    <div id="complaints-grid" class="complaints-grid">
+      <div class="empty-state">Loading complaints...</div>
+    </div>
+  </div>
+
+  <!-- Complaint Detail Modal -->
+  <div id="complaintModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Complaint Details</h2>
+        <span class="close" onclick="closeModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="detail-section">
+          <div class="detail-label">Complaint ID</div>
+          <div class="detail-value" id="modal-complaint-id"></div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Title</div>
+          <div class="detail-value" id="modal-title"></div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Category</div>
+          <div class="detail-value" id="modal-category"></div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Description</div>
+          <div class="detail-value" id="modal-description"></div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Location</div>
+          <div class="detail-value" id="modal-location"></div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Citizen</div>
+          <div class="detail-value" id="modal-citizen"></div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Submitted Date</div>
+          <div class="detail-value" id="modal-date"></div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Current Status</div>
+          <div class="detail-value">
+            <span id="modal-status"></span>
+          </div>
+        </div>
+
+        <!-- Status Update Form -->
+        <div style="background: rgba(212, 181, 101, 0.1); padding: 20px; border-radius: var(--radius-lg); margin-top: 24px;">
+          <h3 style="margin: 0 0 16px; color: var(--color-primary-light);">Take Action</h3>
+
+          <form id="status-form">
+            <div class="form-group">
+              <label for="new-status">Update Status</label>
+              <select id="new-status">
+                <option value="">Keep current status</option>
+                <option value="UNDER_REVIEW">Mark Under Review</option>
+                <option value="IN_PROGRESS">Mark In Progress</option>
+                <option value="RESOLVED">Mark Resolved</option>
+                <option value="CLOSED">Close Complaint</option>
+                <option value="REJECTED">Reject Complaint</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="resolution-notes">Resolution Notes</label>
+              <textarea id="resolution-notes" rows="3" placeholder="Add notes about the resolution or action taken..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="response-message">Send Response to Citizen</label>
+              <textarea id="response-message" rows="4" placeholder="Type a message that will be sent to the citizen as a notification..."></textarea>
+            </div>
+
+            <div id="modal-message" class="message"></div>
+
+            <div style="display: flex; gap: 12px; margin-top: 16px;">
+              <button type="submit" class="btn btn-primary" id="update-btn">Update & Notify Citizen</button>
+              <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Previous Responses -->
+        <div class="responses-section" id="responses-section" style="display: none;">
+          <h3 style="margin: 0 0 16px; color: var(--color-primary-light);">Response History</h3>
+          <div id="responses-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    requireRole('employee', 'login.html');
+
+    let allComplaints = [];
+    let currentFilter = 'all';
+    let currentComplaint = null;
+
+    // Filter tabs
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        currentFilter = this.dataset.status;
+        renderComplaints();
+      });
+    });
+
+    function renderComplaints() {
+      let filtered = allComplaints;
+      if (currentFilter !== 'all') {
+        filtered = allComplaints.filter(c => c.status === currentFilter);
+      }
+
+      const container = document.getElementById('complaints-grid');
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state">No complaints found.</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(complaint => `
+        <div class="complaint-card" onclick="showComplaintDetails(${complaint.complaint_id})">
+          <div class="complaint-header">
+            <div class="complaint-title">#${complaint.complaint_id} - ${complaint.title}</div>
+            <span class="status-badge ${getStatusClass(complaint.status)}">${formatStatus(complaint.status)}</span>
+          </div>
+          <div><strong>Category:</strong> ${complaint.category}</div>
+          <div class="complaint-description">${complaint.description.substring(0, 150)}${complaint.description.length > 150 ? '...' : ''}</div>
+          <div class="complaint-meta">
+            📍 ${complaint.location || 'No location'} •
+            📅 ${formatDate(complaint.submission_date)}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadComplaints() {
+      try {
+        allComplaints = await ComplaintAPI.getAll();
+        allComplaints.sort((a, b) => new Date(b.submission_date) - new Date(a.submission_date));
+        renderComplaints();
+      } catch (error) {
+        document.getElementById('complaints-grid').innerHTML = `<div class="empty-state">Error loading complaints: ${error.message}</div>`;
+      }
+    }
+
+    async function showComplaintDetails(complaintId) {
+      try {
+        currentComplaint = await ComplaintAPI.getById(complaintId);
+
+        document.getElementById('modal-complaint-id').textContent = `#${currentComplaint.complaint_id}`;
+        document.getElementById('modal-title').textContent = currentComplaint.title;
+        document.getElementById('modal-category').textContent = currentComplaint.category;
+        document.getElementById('modal-description').textContent = currentComplaint.description;
+        document.getElementById('modal-location').textContent = currentComplaint.location || 'Not specified';
+        document.getElementById('modal-citizen').textContent = currentComplaint.citizen_name || 'Unknown';
+        document.getElementById('modal-date').textContent = formatDate(currentComplaint.submission_date);
+        document.getElementById('modal-status').innerHTML = `<span class="status-badge ${getStatusClass(currentComplaint.status)}">${formatStatus(currentComplaint.status)}</span>`;
+
+        // Show responses if any
+        if (currentComplaint.responses && currentComplaint.responses.length > 0) {
+          document.getElementById('responses-section').style.display = 'block';
+          document.getElementById('responses-list').innerHTML = currentComplaint.responses.map(r => `
+            <div class="response-item">
+              <div class="response-header">
+                <span class="response-author">${r.employee_name}</span>
+                <span class="response-date">${formatDate(r.response_date)}</span>
+              </div>
+              <div class="response-text">${r.message}</div>
+            </div>
+          `).join('');
+        } else {
+          document.getElementById('responses-section').style.display = 'none';
+        }
+
+        // Reset form
+        document.getElementById('status-form').reset();
+        hideElementMessage('modal-message');
+
+        document.getElementById('complaintModal').classList.add('show');
+      } catch (error) {
+        alert('Error loading complaint details: ' + error.message);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('complaintModal').classList.remove('show');
+      currentComplaint = null;
+    }
+
+    // Handle status update
+    document.getElementById('status-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('update-btn');
+      const newStatus = document.getElementById('new-status').value;
+      const resolutionNotes = document.getElementById('resolution-notes').value;
+      const responseMessage = document.getElementById('response-message').value;
+
+      if (!newStatus && !responseMessage) {
+        showElementMessage('modal-message', 'Please select a status or add a response message', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Updating...';
+
+      try {
+        // Update status if changed
+        if (newStatus) {
+          await ComplaintAPI.updateStatus(currentComplaint.complaint_id, newStatus, resolutionNotes);
+        }
+
+        // Add response if provided
+        if (responseMessage) {
+          await ComplaintAPI.respond(currentComplaint.complaint_id, responseMessage);
+
+          // Create notification for citizen
+          try {
+            await NotificationAPI.create({
+              citizen_id: currentComplaint.citizen_id,
+              title: `Update on your complaint: ${currentComplaint.title}`,
+              message: responseMessage,
+              notification_type: 'COMPLAINT_UPDATE',
+              complaint_id: currentComplaint.complaint_id
+            });
+          } catch (error) {
+            console.warn('Failed to create notification:', error);
+          }
+        }
+
+        showElementMessage('modal-message', 'Complaint updated and citizen notified successfully!', 'success');
+
+        setTimeout(() => {
+          closeModal();
+          loadComplaints();
+        }, 1500);
+
+      } catch (error) {
+        showElementMessage('modal-message', error.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Update & Notify Citizen';
+      }
+    });
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modal = document.getElementById('complaintModal');
+      if (event.target == modal) {
+        closeModal();
+      }
+    }
+
+    loadComplaints();
+  </script>
+</body>
+</html>

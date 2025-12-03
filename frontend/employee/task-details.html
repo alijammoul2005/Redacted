@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Details - Employee Portal</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/citizen.css" />
+  <style>
+    body { min-height: 100vh; background: var(--color-background); padding: 40px 20px; }
+    .details-container { max-width: 1000px; margin: 0 auto; }
+    .details-card { background: var(--color-surface); border: 1px solid rgba(212, 181, 101, 0.3); border-radius: var(--radius-xl); padding: 40px; box-shadow: var(--shadow-xl); margin-bottom: 24px; }
+    .task-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid rgba(212, 181, 101, 0.2); }
+    .task-title { font-size: 28px; color: var(--color-primary-light); margin: 0 0 8px; }
+    .citizen-info-card { background: rgba(212, 181, 101, 0.05); border: 1px solid rgba(212, 181, 101, 0.2); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 32px; }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 24px; }
+    .info-item { padding: 16px; background: rgba(212, 181, 101, 0.05); border: 1px solid rgba(212, 181, 101, 0.2); border-radius: var(--radius-lg); }
+    .info-label { font-size: 12px; color: var(--color-text-muted); font-weight: 600; margin-bottom: 4px; text-transform: uppercase; }
+    .info-value { font-size: 16px; color: var(--color-text); font-weight: 600; }
+    .section-title { font-size: 20px; color: var(--color-primary-light); margin: 32px 0 16px; font-weight: 600; border-bottom: 1px solid rgba(212, 181, 101, 0.2); padding-bottom: 12px; }
+    .action-panel { background: linear-gradient(135deg, rgba(212, 181, 101, 0.15) 0%, rgba(10, 10, 10, 0.8) 100%); border: 1px solid rgba(212, 181, 101, 0.3); border-radius: var(--radius-xl); padding: 32px; }
+    .action-buttons { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+    .attachments-list { display: grid; gap: 12px; }
+    .attachment-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(212, 181, 101, 0.05); border: 1px solid rgba(212, 181, 101, 0.2); border-radius: var(--radius-md); }
+    .forward-section { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(212, 181, 101, 0.2); }
+  </style>
+</head>
+<body>
+  <div class="details-container">
+    <div id="loading" class="loading-spinner"><div class="spinner"></div><p>Loading task details...</p></div>
+    <div id="content" style="display: none;">
+      <div class="details-card">
+        <div class="task-header">
+          <div>
+            <h1 class="task-title" id="request-type"></h1>
+            <div style="color: var(--color-text-muted); font-size: 14px;" id="request-meta"></div>
+          </div>
+          <span id="status-badge"></span>
+        </div>
+
+        <!-- Citizen Information -->
+        <div class="citizen-info-card">
+          <h3 style="color: var(--color-primary-light); margin: 0 0 16px; font-size: 18px;">👤 Citizen Information</h3>
+          <div class="info-grid">
+            <div>
+              <div class="info-label">Name</div>
+              <div class="info-value" id="citizen-name"></div>
+            </div>
+            <div>
+              <div class="info-label">Email</div>
+              <div class="info-value" id="citizen-email"></div>
+            </div>
+            <div>
+              <div class="info-label">Phone</div>
+              <div class="info-value" id="citizen-phone"></div>
+            </div>
+            <div>
+              <div class="info-label">National ID</div>
+              <div class="info-value" id="citizen-id"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Request Details -->
+        <h3 class="section-title">Request Details</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Request ID</div>
+            <div class="info-value" id="request-id"></div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Submitted Date</div>
+            <div class="info-value" id="submitted-date"></div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Priority</div>
+            <div class="info-value" id="priority"></div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Assigned To</div>
+            <div class="info-value" id="assigned-to"></div>
+          </div>
+        </div>
+
+        <div style="margin: 24px 0;">
+          <h4 style="color: var(--color-text-secondary); margin-bottom: 12px;">Description</h4>
+          <p id="description" style="color: var(--color-text-secondary); line-height: 1.6; background: rgba(212, 181, 101, 0.05); padding: 16px; border-radius: var(--radius-md);"></p>
+        </div>
+
+        <!-- Attachments -->
+        <div id="attachments-section" style="display: none;">
+          <h3 class="section-title">Uploaded Documents</h3>
+          <div id="attachments" class="attachments-list"></div>
+        </div>
+
+        <!-- Notes -->
+        <div id="notes-section" style="display: none;">
+          <h3 class="section-title">Internal Notes</h3>
+          <p id="notes" style="color: var(--color-text-secondary); line-height: 1.6; background: rgba(212, 181, 101, 0.05); padding: 16px; border-radius: var(--radius-md);"></p>
+        </div>
+      </div>
+
+      <!-- Action Panel -->
+      <div class="action-panel">
+        <h3 style="color: var(--color-primary-light); margin: 0 0 20px; font-size: 20px;">Take Action</h3>
+
+        <!-- Status Change -->
+        <form id="action-form">
+          <div class="form-group">
+            <label for="new-status">Change Status</label>
+            <select id="new-status">
+              <option value="">Select action...</option>
+              <option value="UNDER_REVIEW">Mark Under Review</option>
+              <option value="APPROVED">Approve Request</option>
+              <option value="REJECTED">Reject Request</option>
+              <option value="COMPLETED">Mark Completed</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="employee-notes">Notes / Rejection Reason <span style="color: var(--color-error);">(Required for rejection)</span></label>
+            <textarea id="employee-notes" rows="4" placeholder="Add internal notes or rejection reason..."></textarea>
+          </div>
+
+          <div id="action-message" class="message"></div>
+
+          <div class="action-buttons">
+            <button type="submit" class="btn btn-primary" id="action-btn">Update Status</button>
+            <button type="button" class="btn btn-outline" onclick="toggleForward()">Forward to Department</button>
+            <a href="tasks.html" class="btn btn-secondary">← Back to Tasks</a>
+          </div>
+
+          <!-- Forward Section -->
+          <div id="forward-section" class="forward-section">
+            <div class="form-group">
+              <label for="forward-dept">Select Department</label>
+              <select id="forward-dept">
+                <option value="">Select department...</option>
+                <!-- Will be populated dynamically -->
+              </select>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="forwardTask()">Forward</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    requireRole('employee', 'login.html');
+
+    const requestId = getUrlParameter('id');
+    if (!requestId) {
+      alert('No request ID provided');
+      window.location.href = 'tasks.html';
+    }
+
+    async function loadTaskDetails() {
+      try {
+        const request = await RequestAPI.getById(requestId);
+
+        // Populate request details
+        document.getElementById('request-type').textContent = request.request_type;
+        document.getElementById('request-meta').textContent = `Request #${request.request_id}`;
+        document.getElementById('status-badge').className = `status-badge ${getStatusClass(request.status)}`;
+        document.getElementById('status-badge').textContent = formatStatus(request.status);
+        document.getElementById('request-id').textContent = `#${request.request_id}`;
+        document.getElementById('submitted-date').textContent = formatDate(request.submitted_date);
+        document.getElementById('priority').textContent = request.priority || 'NORMAL';
+        document.getElementById('assigned-to').textContent = request.assigned_to_name || 'Not assigned';
+        document.getElementById('description').textContent = request.description || 'No description provided';
+
+        if (request.notes) {
+          document.getElementById('notes').textContent = request.notes;
+          document.getElementById('notes-section').style.display = 'block';
+        }
+
+        // Load citizen information
+        try {
+          const citizen = await CitizenAPI.getById(request.citizen_id);
+          document.getElementById('citizen-name').textContent = `${citizen.first_name || ''} ${citizen.last_name || ''}`.trim() || 'N/A';
+          document.getElementById('citizen-email').textContent = citizen.email || 'N/A';
+          document.getElementById('citizen-phone').textContent = citizen.phone || 'N/A';
+          document.getElementById('citizen-id').textContent = citizen.national_id || 'N/A';
+        } catch (error) {
+          console.error('Error loading citizen info:', error);
+        }
+
+        // Load attachments
+        try {
+          const attachments = await FileAPI.getRequestFiles(requestId);
+          if (attachments.length > 0) {
+            document.getElementById('attachments').innerHTML = attachments.map(a => `
+              <div class="attachment-item">
+                <div style="font-size: 24px;">📎</div>
+                <div style="flex: 1;">
+                  <div style="font-size: 14px; color: var(--color-text); font-weight: 600;">${a.filename || a.file_path.split('/').pop()}</div>
+                  <div style="font-size: 12px; color: var(--color-text-muted);">Uploaded ${formatDate(a.uploaded_at)}</div>
+                </div>
+                <button class="btn btn-sm btn-outline" onclick="downloadFile(${a.file_id})">Download</button>
+              </div>
+            `).join('');
+            document.getElementById('attachments-section').style.display = 'block';
+          }
+        } catch (error) {
+          console.log('No attachments:', error);
+        }
+
+        // Load departments
+        try {
+          const departments = await EmployeeAPI.getDepartments();
+          const select = document.getElementById('forward-dept');
+          select.innerHTML = '<option value="">Select department...</option>' +
+            departments.map(d => `<option value="${d.department_id}">${d.name}</option>`).join('');
+        } catch (error) {
+          console.error('Error loading departments:', error);
+        }
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+      } catch (error) {
+        alert('Error loading task: ' + error.message);
+        window.location.href = 'tasks.html';
+      }
+    }
+
+    // Update status
+    document.getElementById('action-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('action-btn');
+      const newStatus = document.getElementById('new-status').value;
+      const notes = document.getElementById('employee-notes').value;
+
+      if (!newStatus) {
+        showElementMessage('action-message', 'Please select a status', 'error');
+        return;
+      }
+
+      // If rejecting, require notes as rejection reason
+      if (newStatus === 'REJECTED' && !notes) {
+        showElementMessage('action-message', 'Rejection reason is required when rejecting a request', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Updating...';
+
+      try {
+        // Pass rejection reason only when rejecting
+        const rejectionReason = newStatus === 'REJECTED' ? notes : null;
+        await RequestAPI.updateStatus(requestId, newStatus, rejectionReason);
+
+        showElementMessage('action-message', 'Status updated successfully!', 'success');
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } catch (error) {
+        showElementMessage('action-message', error.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Update Status';
+      }
+    });
+
+    function toggleForward() {
+      const section = document.getElementById('forward-section');
+      section.style.display = section.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function forwardTask() {
+      const deptId = document.getElementById('forward-dept').value;
+      if (!deptId) {
+        alert('Please select a department');
+        return;
+      }
+
+      try {
+        await RequestAPI.forward(requestId, { department_id: parseInt(deptId) });
+        alert('Request forwarded successfully');
+        window.location.href = 'tasks.html';
+      } catch (error) {
+        alert('Error forwarding request: ' + error.message);
+      }
+    }
+
+    async function downloadFile(fileId) {
+      try {
+        const blob = await FileAPI.downloadFile(fileId);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `file_${fileId}`;
+        a.click();
+      } catch (error) {
+        alert('Error downloading file: ' + error.message);
+      }
+    }
+
+    loadTaskDetails();
+  </script>
+</body>
+</html>

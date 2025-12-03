@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Employee Portal - Login</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .container { width: 100%; max-width: 500px; }
+    .logo-section { text-align: center; margin-bottom: 40px; }
+    .logo-mark { width: 60px; height: 60px; background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: #1a1206; margin: 0 auto 16px; }
+    .brand-name { font-size: 28px; font-weight: 700; letter-spacing: 2px; color: var(--color-primary); margin-bottom: 8px; }
+    .tagline { color: var(--color-text-muted); font-size: 13px; }
+    .employee-badge { display: inline-block; background: rgba(212, 181, 101, 0.15); color: var(--color-primary-light); padding: 6px 16px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; margin-bottom: 16px; }
+    .auth-card { background: var(--color-surface); border: 1px solid rgba(212, 181, 101, 0.3); border-radius: var(--radius-xl); padding: 36px 28px; box-shadow: var(--shadow-xl); }
+    .tabs { display: flex; gap: 12px; margin-bottom: 28px; border-bottom: 1px solid var(--color-border); padding-bottom: 0; }
+    .tab-btn { padding: 12px 24px; background: none; border: none; color: var(--color-text-muted); font-size: var(--font-size-base); font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; transition: all var(--transition-slow); font-family: inherit; }
+    .tab-btn.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo-section">
+      <div class="logo-mark">A</div>
+      <h1 class="brand-name">MUNICIPALITY</h1>
+      <p class="tagline">Employee Portal</p>
+      <div class="employee-badge">👔 STAFF ONLY</div>
+    </div>
+
+    <div class="auth-card">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+        <button class="tab-btn" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div id="login" class="tab-content active">
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-email">Email Address</label>
+            <input type="email" id="login-email" placeholder="employee@municipality.gov" required />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" placeholder="Enter your password" required />
+          </div>
+          <div id="login-message" class="message"></div>
+          <button type="submit" class="btn btn-primary" id="login-btn">Sign In</button>
+        </form>
+      </div>
+
+      <!-- REGISTER -->
+      <div id="register" class="tab-content">
+        <p style="color: #888; font-size: 13px; margin-bottom: 12px; text-align: center;">⚠️ You must first be registered as a citizen</p>
+        <form id="register-form">
+          <div class="form-group">
+            <label for="reg-national-id">National ID *</label>
+            <input type="text" id="reg-national-id" placeholder="Your registered national ID" required />
+          </div>
+          <div class="form-group">
+            <label for="reg-email">Work Email *</label>
+            <input type="email" id="reg-email" placeholder="employee@municipality.gov" required />
+          </div>
+          <div class="form-group">
+            <label for="reg-phone">Work Phone</label>
+            <input type="tel" id="reg-phone" placeholder="+961 XX XXX XXX" />
+          </div>
+          <div class="form-row-inline">
+            <div class="form-group">
+              <label for="reg-password">Password *</label>
+              <input type="password" id="reg-password" placeholder="Min. 8 characters" required minlength="8" />
+            </div>
+            <div class="form-group">
+              <label for="reg-confirm">Confirm Password *</label>
+              <input type="password" id="reg-confirm" placeholder="Re-enter password" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-position">Position *</label>
+            <input type="text" id="reg-position" placeholder="e.g., Document Officer" required />
+          </div>
+          <div class="form-row-inline">
+            <div class="form-group">
+              <label for="reg-type">Employment Type *</label>
+              <select id="reg-type" required>
+                <option value="">Select Type</option>
+                <option value="Full-Time">Full-Time</option>
+                <option value="Part-Time">Part-Time</option>
+                <option value="Contract">Contract</option>
+                <option value="Intern">Intern</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="reg-clearance">Access Level *</label>
+              <select id="reg-clearance" required>
+                <option value="">Select Level</option>
+                <option value="Employee">Employee</option>
+                <option value="Manager">Manager</option>
+                <option value="Administrator">Administrator</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row-inline">
+            <div class="form-group">
+              <label for="reg-department">Department *</label>
+              <select id="reg-department" required><option value="">Loading...</option></select>
+            </div>
+            <div class="form-group">
+              <label for="reg-start">Start Date *</label>
+              <input type="date" id="reg-start" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-salary">Salary (USD) *</label>
+            <input type="number" id="reg-salary" placeholder="2000.00" min="0.01" step="0.01" required />
+          </div>
+          <div id="register-message" class="message"></div>
+          <button type="submit" class="btn btn-primary" id="register-btn">Create Account</button>
+        </form>
+      </div>
+
+      <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--color-border);">
+        <a href="../index.html" style="color: var(--color-primary);">← Back to Home</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tab).classList.add('active');
+      event.target.classList.add('active');
+      hideElementMessage('login-message');
+      hideElementMessage('register-message');
+    }
+
+    // Load departments
+    (async () => {
+      try {
+        const depts = await EmployeeAPI.getDepartments();
+        const select = document.getElementById('reg-department');
+        select.innerHTML = '<option value="">Select Department</option>' +
+          depts.map(d => `<option value="${d.department_id}">${d.name}</option>`).join('');
+      } catch (error) {
+        console.error('Error loading departments:', error);
+      }
+    })();
+
+    // Login
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+
+      try {
+        const data = await login(document.getElementById('login-email').value, document.getElementById('login-password').value);
+        if (data.role !== 'employee') throw new Error('Access denied. This portal is for employees only.');
+        showElementMessage('login-message', 'Login successful! Redirecting...', 'success');
+        setTimeout(() => window.location.href = '/frontend/employee/dashboard.html', 1500);
+      } catch (error) {
+        showElementMessage('login-message', error.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    });
+
+    // Register
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('reg-password').value;
+      const confirm = document.getElementById('reg-confirm').value;
+      if (password !== confirm) {
+        showElementMessage('register-message', 'Passwords do not match', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('register-btn');
+      btn.disabled = true;
+      btn.textContent = 'Creating Account...';
+
+      try {
+        const data = await EmployeeAPI.register({
+          email: document.getElementById('reg-email').value,
+          password: password,
+          phone: document.getElementById('reg-phone').value || null,
+          national_id: document.getElementById('reg-national-id').value,
+          position: document.getElementById('reg-position').value,
+          employment_type: document.getElementById('reg-type').value,
+          access_clearance: document.getElementById('reg-clearance').value,
+          department_id: parseInt(document.getElementById('reg-department').value),
+          start_date: document.getElementById('reg-start').value,
+          salary: parseFloat(document.getElementById('reg-salary').value)
+        });
+
+        showElementMessage('register-message', 'Account created! Logging you in...', 'success');
+
+        // Auto-login
+        await login(document.getElementById('reg-email').value, password);
+        setTimeout(() => window.location.href = '/frontend/employee/dashboard.html', 1500);
+      } catch (error) {
+        showElementMessage('register-message', error.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    });
+
+    // Check if already logged in
+    if (isAuthenticated() && hasRole('employee')) {
+      window.location.href = '/frontend/employee/dashboard.html';
+    }
+  </script>
+</body>
+</html>

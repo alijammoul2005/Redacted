@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Queue - Employee Portal</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/citizen.css" />
+  <style>
+    .tasks-page { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+    .page-header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+    .page-header h1 { font-size: 36px; color: var(--color-primary-light); margin: 0; }
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: var(--color-surface); border: 1px solid rgba(212, 181, 101, 0.25); border-radius: var(--radius-lg); padding: 20px; }
+    .stat-value { font-size: 32px; font-weight: 700; color: var(--color-primary); margin-bottom: 4px; }
+    .stat-label { font-size: 13px; color: var(--color-text-muted); text-transform: uppercase; }
+    .filters-bar { background: var(--color-surface); border: 1px solid rgba(212, 181, 101, 0.25); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 24px; }
+    .filters-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+    .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filter-tab { padding: 8px 16px; background: transparent; border: 1px solid rgba(212, 181, 101, 0.3); color: var(--color-text-secondary); font-size: 13px; font-weight: 600; border-radius: var(--radius-pill); cursor: pointer; transition: all var(--transition-normal); }
+    .filter-tab:hover, .filter-tab.active { background: var(--color-primary); color: #1a1206; border-color: var(--color-primary); }
+    .tasks-grid { display: grid; gap: 16px; }
+    .task-card { background: var(--color-surface); border: 1px solid rgba(212, 181, 101, 0.25); border-radius: var(--radius-lg); padding: 20px; transition: all var(--transition-normal); cursor: pointer; display: flex; justify-content: space-between; align-items: start; gap: 16px; }
+    .task-card:hover { border-color: var(--color-primary-light); box-shadow: var(--shadow-lg); }
+    .task-info { flex: 1; }
+    .task-id { font-size: 18px; font-weight: 700; color: var(--color-primary); margin-bottom: 4px; }
+    .task-type { font-size: 14px; color: var(--color-text); font-weight: 600; margin-bottom: 8px; }
+    .task-meta { font-size: 12px; color: var(--color-text-muted); }
+    .task-actions { display: flex; flex-direction: column; gap: 8px; }
+  </style>
+</head>
+<body>
+  <div class="tasks-page">
+    <div class="page-header">
+      <h1>Task Queue</h1>
+      <a href="dashboard.html" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value" id="total-tasks">0</div>
+        <div class="stat-label">Total Assigned</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="pending-tasks">0</div>
+        <div class="stat-label">Pending Review</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="approved-tasks">0</div>
+        <div class="stat-label">Approved</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="completed-tasks">0</div>
+        <div class="stat-label">Completed</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="filters-row">
+        <span style="font-size: 14px; font-weight: 600; color: var(--color-text-secondary);">Filter by status:</span>
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-status="all">All Tasks</button>
+          <button class="filter-tab" data-status="UNDER_REVIEW">Under Review</button>
+          <button class="filter-tab" data-status="SUBMITTED">Pending</button>
+          <button class="filter-tab" data-status="APPROVED">Approved</button>
+          <button class="filter-tab" data-status="COMPLETED">Completed</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tasks Grid -->
+    <div id="tasks-grid" class="tasks-grid">
+      <div class="empty-state">Loading tasks...</div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    requireRole('employee', 'login.html');
+
+    let allTasks = [];
+    let currentFilter = 'all';
+
+    // Filter tabs
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        currentFilter = this.dataset.status;
+        renderTasks();
+      });
+    });
+
+    function updateStats() {
+      document.getElementById('total-tasks').textContent = allTasks.length;
+      document.getElementById('pending-tasks').textContent = allTasks.filter(t => t.status === 'SUBMITTED' || t.status === 'UNDER_REVIEW').length;
+      document.getElementById('approved-tasks').textContent = allTasks.filter(t => t.status === 'APPROVED').length;
+      document.getElementById('completed-tasks').textContent = allTasks.filter(t => t.status === 'COMPLETED').length;
+    }
+
+    function renderTasks() {
+      let filtered = allTasks;
+      if (currentFilter !== 'all') {
+        filtered = allTasks.filter(t => t.status === currentFilter);
+      }
+
+      const container = document.getElementById('tasks-grid');
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state">No tasks found.</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(task => `
+        <div class="task-card" onclick="window.location.href='task-details.html?id=${task.request_id}'">
+          <div class="task-info">
+            <div class="task-id">#${task.request_id}</div>
+            <div class="task-type">${task.request_type}</div>
+            <div class="task-meta">
+              Submitted: ${formatDate(task.submitted_date)} •
+              Citizen: ${task.citizen_name || 'Unknown'} •
+              Priority: ${task.priority || 'NORMAL'}
+            </div>
+          </div>
+          <div class="task-actions">
+            <span class="status-badge ${getStatusClass(task.status)}">${formatStatus(task.status)}</span>
+            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); window.location.href='task-details.html?id=${task.request_id}'">Review</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Load tasks assigned to this employee
+    async function loadTasks() {
+      try {
+        // Get all requests (in real implementation, this would be filtered by employee)
+        const requests = await RequestAPI.getAll();
+        // For demo, showing all requests. In production, filter by assigned_to
+        allTasks = requests.sort((a, b) => new Date(b.submitted_date) - new Date(a.submitted_date));
+
+        updateStats();
+        renderTasks();
+      } catch (error) {
+        document.getElementById('tasks-grid').innerHTML = `<div class="empty-state">Error loading tasks: ${error.message}</div>`;
+      }
+    }
+
+    loadTasks();
+  </script>
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Requests - Employee Portal</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/citizen.css" />
+  <style>
+    .requests-page { max-width: 1400px; margin: 0 auto; padding: 40px 24px; }
+    .page-header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; }
+    .page-header h1 { font-size: 36px; color: var(--color-primary-light); margin: 0; }
+    .filters-bar { background: var(--color-surface); border: 1px solid rgba(212, 181, 101, 0.25); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 24px; }
+    .filters-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+    .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filter-tab { padding: 8px 16px; background: transparent; border: 1px solid rgba(212, 181, 101, 0.3); color: var(--color-text-secondary); font-size: 13px; font-weight: 600; border-radius: var(--radius-pill); cursor: pointer; transition: all var(--transition-normal); }
+    .filter-tab:hover, .filter-tab.active { background: var(--color-primary); color: #1a1206; border-color: var(--color-primary); }
+    .requests-grid { display: grid; gap: 16px; }
+    .request-card { background: var(--color-surface); border: 1px solid rgba(212, 181, 101, 0.25); border-radius: var(--radius-lg); padding: 20px; transition: all var(--transition-normal); cursor: pointer; }
+    .request-card:hover { border-color: var(--color-primary-light); box-shadow: var(--shadow-lg); }
+    .request-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+    .request-title { font-size: 18px; font-weight: 700; color: var(--color-primary); }
+    .request-meta { font-size: 12px; color: var(--color-text-muted); margin-top: 8px; }
+    .request-description { font-size: 14px; color: var(--color-text-secondary); margin-top: 8px; line-height: 1.5; }
+
+    /* Modal Styles */
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); }
+    .modal.show { display: flex; align-items: center; justify-content: center; }
+    .modal-content { background: var(--color-surface); margin: auto; padding: 0; border: 1px solid rgba(212, 181, 101, 0.5); border-radius: var(--radius-xl); width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { padding: 24px; border-bottom: 1px solid rgba(212, 181, 101, 0.2); display: flex; justify-content: space-between; align-items: center; }
+    .modal-header h2 { margin: 0; color: var(--color-primary-light); }
+    .modal-body { padding: 24px; }
+    .close { color: var(--color-text-muted); font-size: 32px; font-weight: bold; cursor: pointer; line-height: 1; }
+    .close:hover { color: var(--color-primary); }
+    .detail-section { margin-bottom: 24px; }
+    .detail-label { font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+    .detail-value { font-size: 16px; color: var(--color-text); }
+  </style>
+</head>
+<body>
+  <div class="requests-page">
+    <div class="page-header">
+      <h1>Manage Requests</h1>
+      <a href="dashboard.html" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="filters-row">
+        <span style="font-size: 14px; font-weight: 600; color: var(--color-text-secondary);">Filter by status:</span>
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-status="all">All</button>
+          <button class="filter-tab" data-status="SUBMITTED">Submitted</button>
+          <button class="filter-tab" data-status="UNDER_REVIEW">Under Review</button>
+          <button class="filter-tab" data-status="APPROVED">Approved</button>
+          <button class="filter-tab" data-status="PAID">Paid</button>
+          <button class="filter-tab" data-status="COMPLETED">Completed</button>
+          <button class="filter-tab" data-status="REJECTED">Rejected</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Requests Grid -->
+    <div id="requests-grid" class="requests-grid">
+      <div class="empty-state">Loading requests...</div>
+    </div>
+  </div>
+
+  <!-- Request Detail Modal -->
+  <div id="requestModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Request Details</h2>
+        <span class="close" onclick="closeModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="detail-section">
+          <div class="detail-label">Request ID</div>
+          <div class="detail-value" id="modal-request-id"></div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Request Type</div>
+          <div class="detail-value" id="modal-type"></div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Description</div>
+          <div class="detail-value" id="modal-description"></div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Citizen</div>
+          <div class="detail-value" id="modal-citizen"></div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Submitted Date</div>
+          <div class="detail-value" id="modal-date"></div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-label">Current Status</div>
+          <div class="detail-value">
+            <span id="modal-status"></span>
+          </div>
+        </div>
+
+        <div class="detail-section" id="rejection-section" style="display: none;">
+          <div class="detail-label">Rejection Reason</div>
+          <div class="detail-value" id="modal-rejection"></div>
+        </div>
+
+        <!-- Status Update Form -->
+        <div style="background: rgba(212, 181, 101, 0.1); padding: 20px; border-radius: var(--radius-lg); margin-top: 24px;">
+          <h3 style="margin: 0 0 16px; color: var(--color-primary-light);">Process Request</h3>
+
+          <form id="status-form">
+            <div class="form-group">
+              <label for="new-status">Update Status</label>
+              <select id="new-status">
+                <option value="">Keep current status</option>
+                <option value="UNDER_REVIEW">Mark Under Review</option>
+                <option value="APPROVED">Approve Request</option>
+                <option value="REJECTED">Reject Request</option>
+                <option value="COMPLETED">Mark Completed</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="rejection-reason-group" style="display: none;">
+              <label for="rejection-reason">Rejection Reason (Required)</label>
+              <textarea id="rejection-reason" rows="3" placeholder="Explain why this request is being rejected..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="notification-message">Notify Citizen</label>
+              <textarea id="notification-message" rows="4" placeholder="Type a message to notify the citizen about the status update..."></textarea>
+            </div>
+
+            <div id="modal-message" class="message"></div>
+
+            <div style="display: flex; gap: 12px; margin-top: 16px;">
+              <button type="submit" class="btn btn-primary" id="update-btn">Update & Notify</button>
+              <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    requireRole('employee', 'login.html');
+
+    let allRequests = [];
+    let currentFilter = 'all';
+    let currentRequest = null;
+
+    // Show/hide rejection reason field based on status
+    document.getElementById('new-status').addEventListener('change', function() {
+      const rejectionGroup = document.getElementById('rejection-reason-group');
+      if (this.value === 'REJECTED') {
+        rejectionGroup.style.display = 'block';
+      } else {
+        rejectionGroup.style.display = 'none';
+      }
+    });
+
+    // Filter tabs
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        currentFilter = this.dataset.status;
+        renderRequests();
+      });
+    });
+
+    function renderRequests() {
+      let filtered = allRequests;
+      if (currentFilter !== 'all') {
+        filtered = allRequests.filter(r => r.status === currentFilter);
+      }
+
+      const container = document.getElementById('requests-grid');
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state">No requests found.</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(request => `
+        <div class="request-card" onclick="showRequestDetails(${request.request_id})">
+          <div class="request-header">
+            <div class="request-title">#${request.request_id} - ${request.request_type}</div>
+            <span class="status-badge ${getStatusClass(request.status)}">${formatStatus(request.status)}</span>
+          </div>
+          <div class="request-description">${request.description || 'No description provided'}</div>
+          <div class="request-meta">
+            📅 ${formatDate(request.request_date)}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadRequests() {
+      try {
+        allRequests = await RequestAPI.getAll();
+        allRequests.sort((a, b) => new Date(b.request_date) - new Date(a.request_date));
+        renderRequests();
+      } catch (error) {
+        document.getElementById('requests-grid').innerHTML = `<div class="empty-state">Error loading requests: ${error.message}</div>`;
+      }
+    }
+
+    async function showRequestDetails(requestId) {
+      try {
+        currentRequest = await RequestAPI.getById(requestId);
+
+        document.getElementById('modal-request-id').textContent = `#${currentRequest.request_id}`;
+        document.getElementById('modal-type').textContent = currentRequest.request_type;
+        document.getElementById('modal-description').textContent = currentRequest.description || 'No description provided';
+        document.getElementById('modal-citizen').textContent = currentRequest.citizen_name || 'Unknown';
+        document.getElementById('modal-date').textContent = formatDate(currentRequest.request_date);
+        document.getElementById('modal-status').innerHTML = `<span class="status-badge ${getStatusClass(currentRequest.status)}">${formatStatus(currentRequest.status)}</span>`;
+
+        // Show rejection reason if rejected
+        if (currentRequest.status === 'REJECTED' && currentRequest.rejection_reason) {
+          document.getElementById('rejection-section').style.display = 'block';
+          document.getElementById('modal-rejection').textContent = currentRequest.rejection_reason;
+        } else {
+          document.getElementById('rejection-section').style.display = 'none';
+        }
+
+        // Reset form
+        document.getElementById('status-form').reset();
+        document.getElementById('rejection-reason-group').style.display = 'none';
+        hideElementMessage('modal-message');
+
+        document.getElementById('requestModal').classList.add('show');
+      } catch (error) {
+        alert('Error loading request details: ' + error.message);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('requestModal').classList.remove('show');
+      currentRequest = null;
+    }
+
+    // Handle status update
+    document.getElementById('status-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('update-btn');
+      const newStatus = document.getElementById('new-status').value;
+      const rejectionReason = document.getElementById('rejection-reason').value;
+      const notificationMessage = document.getElementById('notification-message').value;
+
+      if (!newStatus && !notificationMessage) {
+        showElementMessage('modal-message', 'Please select a status or add a notification message', 'error');
+        return;
+      }
+
+      // Validate rejection reason
+      if (newStatus === 'REJECTED' && !rejectionReason) {
+        showElementMessage('modal-message', 'Rejection reason is required when rejecting a request', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Updating...';
+
+      try {
+        // Update status if changed
+        if (newStatus) {
+          await RequestAPI.updateStatus(currentRequest.request_id, newStatus, newStatus === 'REJECTED' ? rejectionReason : null);
+        }
+
+        // Send notification if message provided
+        if (notificationMessage) {
+          try {
+            await NotificationAPI.create({
+              citizen_id: currentRequest.citizen_id,
+              title: `Update on your request: ${currentRequest.request_type}`,
+              message: notificationMessage,
+              notification_type: 'REQUEST_UPDATE',
+              request_id: currentRequest.request_id
+            });
+          } catch (error) {
+            console.warn('Failed to create notification:', error);
+          }
+        }
+
+        showElementMessage('modal-message', 'Request updated and citizen notified successfully!', 'success');
+
+        setTimeout(() => {
+          closeModal();
+          loadRequests();
+        }, 1500);
+
+      } catch (error) {
+        showElementMessage('modal-message', error.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Update & Notify';
+      }
+    });
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modal = document.getElementById('requestModal');
+      if (event.target == modal) {
+        closeModal();
+      }
+    }
+
+    loadRequests();
+  </script>
+</body>
+</html>

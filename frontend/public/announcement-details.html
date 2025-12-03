@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Announcement Details - Municipality</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    body { margin: 0; background: var(--color-background); min-height: 100vh; }
+
+    .public-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid rgba(212, 181, 101, 0.3);
+      padding: 20px 0;
+      box-shadow: var(--shadow-lg);
+    }
+    .header-content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      text-decoration: none;
+    }
+    .logo-mark {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a1206;
+    }
+    .brand-text h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--color-primary);
+      margin: 0;
+    }
+
+    .main-content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .article-container {
+      background: var(--color-surface);
+      border: 1px solid rgba(212, 181, 101, 0.3);
+      border-radius: var(--radius-xl);
+      padding: 40px;
+      box-shadow: var(--shadow-xl);
+    }
+
+    .article-header {
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(212, 181, 101, 0.2);
+    }
+
+    .article-meta {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .article-badge {
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: var(--radius-pill);
+      text-transform: uppercase;
+    }
+    .badge-news { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .badge-event { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .badge-tender { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .badge-alert { background: rgba(220, 20, 60, 0.2); color: #ff6b6b; }
+    .badge-maintenance { background: rgba(255, 165, 0, 0.2); color: #ffa726; }
+
+    .article-date {
+      font-size: 14px;
+      color: var(--color-text-muted);
+    }
+
+    .article-title {
+      font-size: 36px;
+      color: var(--color-primary-light);
+      margin: 0 0 16px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .article-author {
+      font-size: 14px;
+      color: var(--color-text-secondary);
+    }
+
+    .article-content {
+      font-size: 16px;
+      color: var(--color-text);
+      line-height: 1.8;
+      margin-bottom: 32px;
+    }
+
+    .article-content p {
+      margin-bottom: 16px;
+    }
+
+    .article-footer {
+      padding-top: 24px;
+      border-top: 1px solid rgba(212, 181, 101, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .share-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .share-btn {
+      padding: 8px 16px;
+      background: rgba(212, 181, 101, 0.1);
+      border: 1px solid rgba(212, 181, 101, 0.3);
+      color: var(--color-text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition-normal);
+    }
+
+    .share-btn:hover {
+      background: var(--color-primary);
+      color: #1a1206;
+      border-color: var(--color-primary);
+    }
+
+    .loading-container {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .error-container {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--color-error);
+    }
+
+    @media (max-width: 768px) {
+      .article-container { padding: 24px; }
+      .article-title { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="public-header">
+    <div class="header-content">
+      <a href="home.html" class="logo-section">
+        <div class="logo-mark">A</div>
+        <div class="brand-text">
+          <h1>MUNICIPALITY</h1>
+        </div>
+      </a>
+      <div>
+        <a href="announcements.html" class="btn btn-secondary btn-sm">← Back to Announcements</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div id="loading" class="loading-container">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+      </div>
+      <p>Loading announcement...</p>
+    </div>
+
+    <div id="error" class="error-container" style="display: none;"></div>
+
+    <div id="article" class="article-container" style="display: none;"></div>
+  </main>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    function getBadgeClass(type) {
+      const classes = {
+        'NEWS': 'badge-news',
+        'EVENT': 'badge-event',
+        'TENDER': 'badge-tender',
+        'ALERT': 'badge-alert',
+        'MAINTENANCE': 'badge-maintenance'
+      };
+      return classes[type] || 'badge-news';
+    }
+
+    function getTypeIcon(type) {
+      const icons = {
+        'NEWS': '📰',
+        'EVENT': '📅',
+        'TENDER': '📋',
+        'ALERT': '🚨',
+        'MAINTENANCE': '🔧'
+      };
+      return icons[type] || '📄';
+    }
+
+    // Get announcement ID from URL
+    const announcementId = getUrlParameter('id');
+    if (!announcementId) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').innerHTML = `
+        <h2>No Announcement ID Provided</h2>
+        <p>Please select an announcement to view.</p>
+        <a href="announcements.html" class="btn btn-primary">View All Announcements</a>
+      `;
+      document.getElementById('error').style.display = 'block';
+    } else {
+      loadAnnouncement();
+    }
+
+    async function loadAnnouncement() {
+      try {
+        const announcement = await AnnouncementAPI.getById(announcementId);
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('article').innerHTML = `
+          <div class="article-header">
+            <div class="article-meta">
+              <span class="article-badge ${getBadgeClass(announcement.type)}">
+                ${getTypeIcon(announcement.type)} ${announcement.type}
+              </span>
+              <span class="article-date">📅 ${formatDate(announcement.created_at)}</span>
+            </div>
+            <h1 class="article-title">${announcement.title}</h1>
+            <div class="article-author">
+              Posted by: ${announcement.posted_by_name || 'Municipality Admin'}
+            </div>
+          </div>
+
+          <div class="article-content">
+            ${announcement.content.split('\n').map(p => `<p>${p}</p>`).join('')}
+          </div>
+
+          <div class="article-footer">
+            <div class="share-buttons">
+              <button class="share-btn" onclick="shareAnnouncement()">📤 Share</button>
+              <button class="share-btn" onclick="window.print()">🖨️ Print</button>
+            </div>
+            <div>
+              <a href="announcements.html" class="btn btn-secondary btn-sm">View More Announcements</a>
+            </div>
+          </div>
+        `;
+        document.getElementById('article').style.display = 'block';
+
+        // Update page title
+        document.title = `${announcement.title} - Municipality`;
+      } catch (error) {
+        console.error('Error loading announcement:', error);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').innerHTML = `
+          <h2>Error Loading Announcement</h2>
+          <p>${error.message}</p>
+          <a href="announcements.html" class="btn btn-primary">Back to Announcements</a>
+        `;
+        document.getElementById('error').style.display = 'block';
+      }
+    }
+
+    function shareAnnouncement() {
+      if (navigator.share) {
+        navigator.share({
+          title: document.title,
+          url: window.location.href
+        }).catch(err => console.log('Error sharing:', err));
+      } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          alert('Link copied to clipboard!');
+        });
+      }
+    }
+  </script>
+</body>
+</html>
