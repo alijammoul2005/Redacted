@@ -1,0 +1,83 @@
+# docker-compose.yml
+services:
+  db:
+    image: mysql:8.0
+    container_name: municipality_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-municipality_db}
+      MYSQL_USER: ${MYSQL_USER:-municipality_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-municipality_pass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - municipality_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: municipality_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-municipality_user}:${MYSQL_PASSWORD:-municipality_pass}@db:3306/${MYSQL_DATABASE:-municipality_db}
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}
+      # Allow frontend running on Mac to access API
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:3000,http://localhost:8080}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - municipality_network
+    volumes:
+      - .:/app
+      - uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/api/auth/test')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# COMMENT OUT or REMOVE frontend section
+# frontend:
+#   build:
+#     context: ./frontend
+#     dockerfile: Dockerfile
+#   container_name: municipality_frontend
+#   restart: unless-stopped
+#   ports:
+#     - "80:80"
+#     - "3000:80"
+#   depends_on:
+#     - backend
+#   networks:
+#     - municipality_network
+#   healthcheck:
+#     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+#     interval: 30s
+#     timeout: 10s
+#     retries: 3
+
+networks:
+  municipality_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  uploads:
+    driver: local
